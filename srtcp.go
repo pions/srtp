@@ -1,7 +1,6 @@
 package srtp
 
 import (
-	"crypto/cipher"
 	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
@@ -45,8 +44,8 @@ func (c *Context) decryptRTCP(dst, encrypted []byte) ([]byte, error) {
 	}
 	markAsValid()
 
-	stream := cipher.NewCTR(c.srtcpBlock, c.generateCounter(uint16(index&0xffff), index>>16, ssrc, c.srtcpSessionSalt))
-	stream.XORKeyStream(out[8:], out[8:])
+	counter := c.generateCounter(uint16(index&0xffff), index>>16, ssrc, c.srtcpSessionSalt)
+	xorBytesCTR(c.srtcpBlock, counter, out[8:], out[8:])
 
 	return out, nil
 }
@@ -76,8 +75,8 @@ func (c *Context) encryptRTCP(dst, decrypted []byte) ([]byte, error) {
 	}
 
 	// Encrypt everything after header
-	stream := cipher.NewCTR(c.srtcpBlock, c.generateCounter(uint16(s.srtcpIndex&0xffff), s.srtcpIndex>>16, ssrc, c.srtcpSessionSalt))
-	stream.XORKeyStream(out[8:], out[8:])
+	counter := c.generateCounter(uint16(s.srtcpIndex&0xffff), s.srtcpIndex>>16, ssrc, c.srtcpSessionSalt)
+	xorBytesCTR(c.srtcpBlock, counter, out[8:], out[8:])
 
 	// Add SRTCP Index and set Encryption bit
 	out = append(out, make([]byte, 4)...)
