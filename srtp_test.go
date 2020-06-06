@@ -359,6 +359,7 @@ func BenchmarkEncryptRTP(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	b.SetBytes(int64(len(pktRaw)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -383,6 +384,7 @@ func BenchmarkEncryptRTPInPlace(b *testing.B) {
 
 	buf := make([]byte, 0, len(pktRaw)+10)
 
+	b.SetBytes(int64(len(pktRaw)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -414,6 +416,7 @@ func BenchmarkDecryptRTP(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	b.SetBytes(int64(len(encryptedRaw)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
