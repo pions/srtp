@@ -21,7 +21,7 @@ func (c *noopConn) SetDeadline(t time.Time) error      { return nil }
 func (c *noopConn) SetReadDeadline(t time.Time) error  { return nil }
 func (c *noopConn) SetWriteDeadline(t time.Time) error { return nil }
 
-func BenchmarkWrite(b *testing.B) {
+func benchmarkWrite(b *testing.B, size int) {
 	conn := newNoopConn()
 
 	config := &Config{
@@ -49,7 +49,7 @@ func BenchmarkWrite(b *testing.B) {
 			Version: 2,
 			SSRC:    322,
 		},
-		Payload: make([]byte, 100),
+		Payload: make([]byte, size),
 	}
 
 	packetRaw, err := packet.Marshal()
@@ -57,6 +57,7 @@ func BenchmarkWrite(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	b.SetBytes(int64(len(packetRaw)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -74,7 +75,19 @@ func BenchmarkWrite(b *testing.B) {
 	}
 }
 
-func BenchmarkWriteRTP(b *testing.B) {
+func BenchmarkWrite14(b *testing.B) {
+	benchmarkWrite(b, 14)
+}
+
+func BenchmarkWrite140(b *testing.B) {
+	benchmarkWrite(b, 140)
+}
+
+func BenchmarkWrite1400(b *testing.B) {
+	benchmarkWrite(b, 1400)
+}
+
+func benchmarkWriteRTP(b *testing.B, size int) {
 	conn := &noopConn{
 		closed: make(chan struct{}),
 	}
@@ -104,8 +117,9 @@ func BenchmarkWriteRTP(b *testing.B) {
 		SSRC:    322,
 	}
 
-	payload := make([]byte, 100)
+	payload := make([]byte, size)
 
+	b.SetBytes(int64(header.MarshalSize() + len(payload)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -121,4 +135,16 @@ func BenchmarkWriteRTP(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+}
+
+func BenchmarkWriteRTP14(b *testing.B) {
+	benchmarkWriteRTP(b, 14)
+}
+
+func BenchmarkWriteRTP140(b *testing.B) {
+	benchmarkWriteRTP(b, 140)
+}
+
+func BenchmarkWriteRTP1400(b *testing.B) {
+	benchmarkWriteRTP(b, 1400)
 }

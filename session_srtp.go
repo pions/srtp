@@ -2,6 +2,7 @@ package srtp
 
 import (
 	"net"
+	"sync"
 
 	"github.com/pion/logging"
 	"github.com/pion/rtp"
@@ -117,13 +118,29 @@ func (s *SessionSRTP) write(b []byte) (int, error) {
 	return s.writeRTP(&packet.Header, packet.Payload)
 }
 
+// bufferpool is a global pool of buffers used for encrypted packets in
+// writeRTP below.  Since it's global, buffers can be shared between
+// different sessions, which amortizes the cost of allocating the pool.
+var bufferpool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 1460)
+	},
+}
+
 func (s *SessionSRTP) writeRTP(header *rtp.Header, payload []byte) (int, error) {
 	if _, ok := <-s.session.started; ok {
 		return 0, errStartedChannelUsedIncorrectly
 	}
 
+	// encryptRTP will either return our buffer, or, if it is too
+	// small, allocate a new buffer itself.  In either case, it is
+	// safe to put the buffer back into the pool, but only after
+	// nextConn.Write has returned.
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+
 	s.session.localContextMutex.Lock()
-	encrypted, err := s.localContext.encryptRTP(nil, header, payload)
+	encrypted, err := s.localContext.encryptRTP(buf.([]byte), header, payload)
 	s.session.localContextMutex.Unlock()
 
 	if err != nil {

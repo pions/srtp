@@ -363,18 +363,19 @@ func TestRTPReplayProtection(t *testing.T) {
 	}
 }
 
-func BenchmarkEncryptRTP(b *testing.B) {
+func benchmarkEncryptRTP(b *testing.B, size int) {
 	encryptContext, err := buildTestContext()
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	pkt := &rtp.Packet{Payload: make([]byte, 100)}
+	pkt := &rtp.Packet{Payload: make([]byte, size)}
 	pktRaw, err := pkt.Marshal()
 	if err != nil {
 		b.Fatal(err)
 	}
 
+	b.SetBytes(int64(len(pktRaw)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -385,13 +386,25 @@ func BenchmarkEncryptRTP(b *testing.B) {
 	}
 }
 
-func BenchmarkEncryptRTPInPlace(b *testing.B) {
+func BenchmarkEncryptRTP14(b *testing.B) {
+	benchmarkEncryptRTP(b, 14)
+}
+
+func BenchmarkEncryptRTP140(b *testing.B) {
+	benchmarkEncryptRTP(b, 140)
+}
+
+func BenchmarkEncryptRTP1400(b *testing.B) {
+	benchmarkEncryptRTP(b, 1400)
+}
+
+func benchmarkEncryptRTPInPlace(b *testing.B, size int) {
 	encryptContext, err := buildTestContext()
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	pkt := &rtp.Packet{Payload: make([]byte, 100)}
+	pkt := &rtp.Packet{Payload: make([]byte, size)}
 	pktRaw, err := pkt.Marshal()
 	if err != nil {
 		b.Fatal(err)
@@ -399,6 +412,7 @@ func BenchmarkEncryptRTPInPlace(b *testing.B) {
 
 	buf := make([]byte, 0, len(pktRaw)+10)
 
+	b.SetBytes(int64(len(pktRaw)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -407,6 +421,18 @@ func BenchmarkEncryptRTPInPlace(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+func BenchmarkEncryptRTPInPlace14(b *testing.B) {
+	benchmarkEncryptRTPInPlace(b, 14)
+}
+
+func BenchmarkEncryptRTPInPlace140(b *testing.B) {
+	benchmarkEncryptRTPInPlace(b, 140)
+}
+
+func BenchmarkEncryptRTPInPlace1400(b *testing.B) {
+	benchmarkEncryptRTPInPlace(b, 1400)
 }
 
 func BenchmarkDecryptRTP(b *testing.B) {
@@ -430,6 +456,7 @@ func BenchmarkDecryptRTP(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	b.SetBytes(int64(len(encryptedRaw)))
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
