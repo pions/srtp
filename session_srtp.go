@@ -157,7 +157,9 @@ func (s *SessionSRTP) decrypt(buf []byte) error {
 		return errFailedTypeAssertion
 	}
 
-	decrypted, err := s.remoteContext.decryptRTP(buf, buf, h)
+	// Safe since remoteContext always contains a *Context.
+	remoteContext := s.remoteContext.Load().(*Context)
+	decrypted, err := remoteContext.decryptRTP(buf, buf, h)
 	if err != nil {
 		return err
 	}

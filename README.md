@@ -49,6 +49,7 @@ Check out the **[contributing wiki](https://github.com/pion/webrtc/wiki/Contribu
 * [Mission Liao](https://github.com/mission-liao)
 * [Orlando](https://github.com/OrlandoCo)
 * [Tarrence van As](https://github.com/tarrencev)
+* [Antoine Baché](https://github.com/Antonito)
 
 ### License
 MIT License - see [LICENSE](LICENSE) for full text

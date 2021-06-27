@@ -147,7 +147,9 @@ func destinationSSRC(pkts []rtcp.Packet) []uint32 {
 }
 
 func (s *SessionSRTCP) decrypt(buf []byte) error {
-	decrypted, err := s.remoteContext.DecryptRTCP(buf, buf, nil)
+	// Safe since remoteContext always contains a *Context.
+	remoteContext := s.remoteContext.Load().(*Context)
+	decrypted, err := remoteContext.DecryptRTCP(buf, buf, nil)
 	if err != nil {
 		return err
 	}
