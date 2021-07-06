@@ -443,7 +443,13 @@ func BenchmarkDecryptRTP(b *testing.B) {
 func TestRolloverCount2(t *testing.T) {
 	s := &srtpSSRCState{ssrc: defaultSsrc}
 
-	roc, update := s.nextRolloverCount(64430)
+	roc, update := s.nextRolloverCount(30123)
+	if roc != 0 {
+		t.Errorf("Initial rolloverCounter must be 0")
+	}
+	update()
+
+	roc, update = s.nextRolloverCount(62892) // 30123 + (1 << 15) + 1
 	if roc != 0 {
 		t.Errorf("Initial rolloverCounter must be 0")
 	}

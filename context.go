@@ -112,28 +112,35 @@ func CreateContext(masterKey, masterSalt []byte, profile ProtectionProfile, opts
 func (s *srtpSSRCState) nextRolloverCount(sequenceNumber uint16) (uint32, func()) {
 	seq := int32(sequenceNumber)
 	localRoc := uint32(s.index >> 16)
-	localSeq := int32(s.index & 0xffff)
+	localSeq := int32(s.index & (seqNumMax - 1))
 
 	guessRoc := localRoc
 	var difference int32 = 0
 
 	if s.rolloverHasProcessed {
-		if localSeq < seqNumMedian {
-			if seq-localSeq > seqNumMedian {
-				guessRoc = localRoc - 1
-				difference = seq - localSeq - seqNumMax
+		// When localROC is equal to 0, and entering seq-localSeq > seqNumMedian
+		// judgment, it will cause guessRoc calculation error
+		if s.index > seqNumMedian {
+			if localSeq < seqNumMedian {
+				if seq-localSeq > seqNumMedian {
+					guessRoc = localRoc - 1
+					difference = seq - localSeq - seqNumMax
+				} else {
+					guessRoc = localRoc
+					difference = seq - localSeq
+				}
 			} else {
-				guessRoc = localRoc
-				difference = seq - localSeq
+				if localSeq-seqNumMedian > seq {
+					guessRoc = localRoc + 1
+					difference = seq - localSeq + seqNumMax
+				} else {
+					guessRoc = localRoc
+					difference = seq - localSeq
+				}
 			}
 		} else {
-			if localSeq-seqNumMedian > seq {
-				guessRoc = localRoc + 1
-				difference = seq - localSeq + seqNumMax
-			} else {
-				guessRoc = localRoc
-				difference = seq - localSeq
-			}
+			// localRoc is equal to 0
+			difference = seq - localSeq
 		}
 	}
 
