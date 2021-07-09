@@ -48,7 +48,7 @@ func TestValidPacketCounter(t *testing.T) {
 
 	s := &srtpSSRCState{ssrc: 4160032510}
 	expectedCounter := []byte{0xcf, 0x90, 0x1e, 0xa5, 0xda, 0xd3, 0x2c, 0x15, 0x00, 0xa2, 0x24, 0xae, 0xae, 0xaf, 0x00, 0x00}
-	counter := generateCounter(32846, s.rolloverCounter, s.ssrc, srtpSessionSalt)
+	counter := generateCounter(32846, uint32(s.index>>16), s.ssrc, srtpSessionSalt)
 	if !bytes.Equal(counter, expectedCounter) {
 		t.Errorf("Session Key % 02x does not match expected % 02x", counter, expectedCounter)
 	}
@@ -438,4 +438,61 @@ func BenchmarkDecryptRTP(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+func TestRolloverCount2(t *testing.T) {
+	s := &srtpSSRCState{ssrc: defaultSsrc}
+
+	roc, update := s.nextRolloverCount(30123)
+	if roc != 0 {
+		t.Errorf("Initial rolloverCounter must be 0")
+	}
+	update()
+
+	roc, update = s.nextRolloverCount(62892) // 30123 + (1 << 15) + 1
+	if roc != 0 {
+		t.Errorf("Initial rolloverCounter must be 0")
+	}
+	update()
+	roc, update = s.nextRolloverCount(204)
+	if roc != 1 {
+		t.Errorf("rolloverCounter was not updated after it crossed 0")
+	}
+	update()
+	roc, update = s.nextRolloverCount(64535)
+	if roc != 0 {
+		t.Errorf("rolloverCounter was not updated when it rolled back, failed to handle out of order")
+	}
+	update()
+	roc, update = s.nextRolloverCount(205)
+	if roc != 1 {
+		t.Errorf("rolloverCounter was improperly updated for non-significant packets")
+	}
+	update()
+	roc, update = s.nextRolloverCount(1)
+	if roc != 1 {
+		t.Errorf("rolloverCounter was improperly updated for non-significant packets")
+	}
+	update()
+
+	roc, update = s.nextRolloverCount(64532)
+	if roc != 0 {
+		t.Errorf("rolloverCounter was improperly updated for non-significant packets")
+	}
+	update()
+	roc, update = s.nextRolloverCount(65534)
+	if roc != 0 {
+		t.Errorf("index was improperly updated for non-significant packets")
+	}
+	update()
+	roc, update = s.nextRolloverCount(64532)
+	if roc != 0 {
+		t.Errorf("index was improperly updated for non-significant packets")
+	}
+	update()
+	roc, update = s.nextRolloverCount(205)
+	if roc != 1 {
+		t.Errorf("index was not updated after it crossed 0")
+	}
+	update()
 }
